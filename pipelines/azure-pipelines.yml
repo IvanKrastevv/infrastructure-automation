@@ -1,0 +1,46 @@
+trigger:
+  branches:
+    include:
+      - main
+
+variables:
+  TF_VAR_subscription_id: '<your-subscription-id>'
+  ARM_CLIENT_ID: $(servicePrincipalId)
+  ARM_CLIENT_SECRET: $(servicePrincipalKey)
+  ARM_TENANT_ID: $(tenantId)
+
+stages:
+- stage: Terraform
+  displayName: 'Terraform plan & apply'
+  jobs:
+  - job: terraform
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Azure CLI Login (Service Connection)'
+      inputs:
+        azureSubscription: '<Your-Azure-DevOps-ServiceConnection>'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          echo "Logged in"
+
+    - script: |
+        sudo apt-get update && sudo apt-get -y install unzip
+        curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+        sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+        sudo apt-get update && sudo apt-get -y install terraform
+      displayName: 'Install Terraform'
+
+    - script: |
+        cd terraform
+        terraform init -backend-config="resource_group_name=<tfstate-rg>" -backend-config="storage_account_name=<sa>" -backend-config="container_name=tfstate" -backend-config="key=${BUILD_BUILDID}.tfstate"
+        terraform fmt -check
+        terraform plan -out=tfplan
+      displayName: 'Terraform init & plan'
+
+    - script: |
+        cd terraform
+        terraform apply -auto-approve tfplan
+      displayName: 'Terraform apply'
