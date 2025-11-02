@@ -1,19 +1,32 @@
-resource "azurerm_mssql_server" "db_server" {
-  name                         = "my-sqlserver-demo"
-  resource_group_name          = azurerm_resource_group.main.name
-  location                     = azurerm_resource_group.main.location
-  version                      = "12.0"
-  administrator_login          = "sqladminuser"
-  administrator_login_password = "P@ssw0rd1234!"
+resource "random_password" "sql_pw" {
+  length  = 16
+  special = true
 }
 
-resource "azurerm_mssql_database" "app_db" {
-  name           = "webappdb"
-  server_id      = azurerm_mssql_server.db_server.id
-  sku_name       = "Basic" # fits free-tier
-  max_size_gb    = 1
+resource "azurerm_mssql_server" "sql" {
+  name                         = "${var.prefix}-sql"
+  resource_group_name           = azurerm_resource_group.rg.name
+  location                      = azurerm_resource_group.rg.location
+  version                       = "12.0"
+  administrator_login            = "sqladmin"
+  administrator_login_password   = random_password.sql_pw.result
 }
 
-output "database_connection_string" {
-  value = "Server=tcp:${azurerm_mssql_server.db_server.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.app_db.name};User ID=${azurerm_mssql_server.db_server.administrator_login};Password=${azurerm_mssql_server.db_server.administrator_login_password};Encrypt=true;Connection Timeout=30;"
+resource "azurerm_mssql_database" "appdb" {
+  name      = "appdb"
+  server_id = azurerm_mssql_server.sql.id
+  sku_name  = "Basic"
+}
+
+output "db_fqdn" {
+  value = azurerm_mssql_server.sql.fully_qualified_domain_name
+}
+
+output "db_user" {
+  value = azurerm_mssql_server.sql.administrator_login
+}
+
+output "db_password" {
+  value     = random_password.sql_pw.result
+  sensitive = true
 }
