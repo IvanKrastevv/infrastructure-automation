@@ -59,7 +59,8 @@ resource "azurerm_linux_virtual_machine_scale_set" "web" {
             <p>VM managed by Terraform</p>
           </body>
           </html>
-      - path: /var/www/html/health
+      - path: /var/www/html/health.html
+        permissions: '0644'
         content: |
           OK
     runcmd:
