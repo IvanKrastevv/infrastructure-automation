@@ -24,7 +24,6 @@ stages:
 
 - stage: Terraform_Plan
   displayName: "Terraform Init + Plan (PR)"
-  condition: eq(variables['Build.Reason'], 'PullRequest')
   condition: succeeded()
   jobs:
   - job: Plan
