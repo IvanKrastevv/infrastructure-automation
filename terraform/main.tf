@@ -1,18 +1,15 @@
-resource "azurerm_resource_group" "rg" {
-  name     = "${var.prefix}-rg"
+locals {
+  # Common resource name prefix
+  name_prefix = "${var.project_name}-${var.environment}"
+  
+  # Common tags for all resources
+  common_tags = {
+    Environment = var.environment
+    Project     = var.project_name
+    ManagedBy   = "Terraform"
+    CreatedDate = timestamp()
+  }
+  
+  # Common location
   location = var.location
-}
-
-resource "azurerm_virtual_network" "vnet" {
-  name                = "${var.prefix}-vnet"
-  address_space       = ["10.0.0.0/16"]
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-}
-
-resource "azurerm_subnet" "subnet" {
-  name                 = "${var.prefix}-subnet"
-  resource_group_name  = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.1.0/24"]
 }
