@@ -38,7 +38,7 @@ resource "azurerm_lb_probe" "http" {
   loadbalancer_id = azurerm_lb.main.id
   protocol        = "Http"
   port            = 80
-  request_path    = "/health"
+  request_path    = "/health.html"
 }
 
 # Load Balancing Rule
