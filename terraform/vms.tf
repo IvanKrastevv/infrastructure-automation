@@ -85,8 +85,8 @@ resource "azurerm_monitor_autoscale_setting" "web" {
     name = "AutoScale"
     
     capacity {
-      default = 2
-      minimum = 2
+      default = 3
+      minimum = 3
       maximum = var.autoscale_max
     }
     
