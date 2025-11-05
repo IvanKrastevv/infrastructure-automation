@@ -1,0 +1,39 @@
+# ============================================================================
+# Terraform Variables Example
+# ============================================================================
+# 
+# INSTRUCTIONS:
+# 1. Copy this file to terraform.tfvars:
+#    cp terraform.tfvars.example terraform.tfvars
+# 
+# 2. Update the values below with your actual configuration
+# 
+# 3. NEVER commit terraform.tfvars to Git (it's in .gitignore)
+# 
+# ============================================================================
+
+project_name = "ivan-mywebapp"
+environment  = "dev"
+location     = "East US"
+
+# VM Administrator Credentials
+# ⚠️ CHANGE THESE TO STRONG PASSWORDS!
+admin_username    = "azureadmin"
+admin_password    = "CHANGE_ME_TO_STRONG_PASSWORD_12chars+"
+
+# Database Administrator Credentials
+# ⚠️ CHANGE THESE TO STRONG PASSWORDS!
+db_admin_username = "sqladmin"
+db_admin_password = "CHANGE_ME_TO_STRONG_PASSWORD_12chars+"
+
+# Auto-scaling Configuration (optional)
+# autoscale_max = 10
+
+# ============================================================================
+# Password Requirements:
+# - Minimum 12 characters
+# - Mix of uppercase, lowercase, numbers, and special characters
+# - No dictionary words
+# 
+# Example strong password: "Xy9$mK#pL2qR@8wN!vB5"
+# ============================================================================
