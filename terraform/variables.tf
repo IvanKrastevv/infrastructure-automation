@@ -39,3 +39,9 @@ variable "db_admin_password" {
   type        = string
   sensitive   = true
 }
+
+variable "autoscale_max" {
+  type        = number
+  default     = 10
+  description = "Maximum number of VM instances in scale set"
+}
