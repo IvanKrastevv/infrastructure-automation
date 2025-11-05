@@ -1,6 +1,24 @@
-output "lb_ip" {
-  value = azurerm_public_ip.lb_ip.ip_address
+output "load_balancer_ip" {
+  description = "Public IP of load balancer"
+  value       = azurerm_public_ip.lb.ip_address
 }
-output "db_fqdn" {
-  value = azurerm_mssql_server.sql.fully_qualified_domain_name
+
+output "application_url" {
+  description = "URL to access application"
+  value       = "http://${azurerm_public_ip.lb.ip_address}"
+}
+
+output "resource_group_name" {
+  description = "Resource group name"
+  value       = azurerm_resource_group.main.name
+}
+
+output "sql_server_name" {
+  description = "SQL Server name"
+  value       = azurerm_mssql_server.main.name
+}
+
+output "database_name" {
+  description = "Database name"
+  value       = azurerm_mssql_database.main.name
 }
