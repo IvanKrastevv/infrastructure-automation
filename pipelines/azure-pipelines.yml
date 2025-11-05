@@ -3,43 +3,93 @@ trigger:
     include:
       - main
 
+pr:
+  branches:
+    include:
+      - '*'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  terraformVersion: '1.9.8'
+  environment: 'ivan-test'
+  backend_rg: 'tfstate-rg'
+  backend_storage: 'tfstatestorage-ivan'
+  backend_container: 'tfstate'
+  backend_key: 'infra/terraform.tfstate'
+  deploymentBranch: 'refs/heads/main'
+
 stages:
-- stage: Deploy
-  displayName: "Terraform Infrastructure Deployment"
+
+- stage: Terraform_Plan
+  displayName: "Terraform Init + Plan (PR)"
+  condition: eq(variables['Build.Reason'], 'PullRequest')
+  condition: succeeded()
   jobs:
-  - job: terraform
-    pool:
-      vmImage: "ubuntu-latest"
+  - job: Plan
     steps:
-    - checkout: self
+    - task: TerraformInstaller@1
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: '$(terraformVersion)'
 
     - task: AzureCLI@2
-      displayName: "Azure CLI Login"
+      displayName: 'Terraform Init + Plan'
       inputs:
-        azureSubscription: "tf-sp-iac-demo"  # Service connection name
-        scriptType: bash
-        scriptLocation: inlineScript
-        inlineScript: echo "✅ Logged in to Azure"
+        azureSubscription: 'AzureServiceConnection'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          cd terraform
 
-    - script: |
-        sudo apt-get update -y
-        sudo apt-get install -y unzip wget
-        wget -q https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
-        unzip terraform_1.8.5_linux_amd64.zip
-        sudo mv terraform /usr/local/bin/
-      displayName: "Install Terraform"
+          echo "Initializing Terraform backend..."
+          terraform init \
+            -backend-config="resource_group_name=$(backend_rg)" \
+            -backend-config="storage_account_name=$(backend_storage)" \
+            -backend-config="container_name=$(backend_container)" \
+            -backend-config="key=$(backend_key)"
 
-    - script: |
-        cd terraform
-        terraform init -backend-config="resource_group_name=tfstate-rg" \
-                       -backend-config="storage_account_name=<uniquestateaccount>" \
-                       -backend-config="container_name=tfstate" \
-                       -backend-config="key=${BUILD_BUILDID}.tfstate"
-        terraform fmt -check
-        terraform plan -out=tfplan
-      displayName: "Terraform Init & Plan"
+          echo "Planning..."
+          terraform plan -out=tfplan
 
-    - script: |
-        cd terraform
-        terraform apply -auto-approve tfplan
-      displayName: "Terraform Apply"
+          echo "Exporting plan to artifact..."
+          mkdir -p $(Build.ArtifactStagingDirectory)
+          cp tfplan $(Build.ArtifactStagingDirectory)/tfplan
+    - publish: $(Build.ArtifactStagingDirectory)
+      artifact: terraform_plan
+
+
+- stage: Terraform_Apply
+  displayName: "Terraform Apply (main branch)"
+  dependsOn: Terraform_Plan
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], variables['deploymentBranch']), ne(variables['Build.Reason'], 'PullRequest'))
+  jobs:
+  - job: Apply
+    steps:
+    - task: TerraformInstaller@1
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: '$(terraformVersion)'
+
+    - download: current
+      artifact: terraform_plan
+
+    - task: AzureCLI@2
+      displayName: 'Terraform Apply'
+      inputs:
+        azureSubscription: 'AzureServiceConnection'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          cd terraform
+
+          echo "Reinitializing backend..."
+          terraform init \
+            -backend-config="resource_group_name=$(backend_rg)" \
+            -backend-config="storage_account_name=$(backend_storage)" \
+            -backend-config="container_name=$(backend_container)" \
+            -backend-config="key=$(backend_key)"
+
+          echo "Applying plan..."
+          terraform apply -auto-approve $(Pipeline.Workspace)/terraform_plan/tfplan
