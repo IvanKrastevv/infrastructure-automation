@@ -8,14 +8,17 @@ resource "azurerm_linux_virtual_machine_scale_set" "web" {
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   sku                 = "Standard_B2s"
-  instances           = 2
+  instances           = 3
   admin_username      = var.admin_username
   admin_password      = var.admin_password
   disable_password_authentication = false
   
   upgrade_mode    = "Automatic"
   health_probe_id = azurerm_lb_probe.http.id
-  
+
+  zones = ["1", "2", "3"]
+  zone_balance = true
+
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
