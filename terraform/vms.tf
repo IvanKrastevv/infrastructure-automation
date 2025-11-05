@@ -87,7 +87,7 @@ resource "azurerm_monitor_autoscale_setting" "web" {
     capacity {
       default = 2
       minimum = 2
-      maximum = 10
+      maximum = var.autoscale_max
     }
     
     # Scale out when CPU > 75%
