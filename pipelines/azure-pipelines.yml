@@ -50,7 +50,11 @@ stages:
             -backend-config="key=$(backend_key)"
 
           echo "Planning..."
-          terraform plan -out=tfplan
+          
+          terraform plan \
+            -var "admin_password=$(admin_password)" \
+            -var "db_admin_password=$(db_admin_password)" \
+            -out=tfplan
 
           echo "Exporting plan to artifact..."
           mkdir -p $(Build.ArtifactStagingDirectory)
