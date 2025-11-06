@@ -25,6 +25,12 @@ resource "azurerm_subnet" "database" {
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.2.0/24"]
   private_endpoint_network_policies = "Enabled"
+  
+  delegation {
+    name = "delegation"
+    service_principal_action = "Microsoft.Network/virtualNetworks/subnets/join/action"
+    service_A_name = "Microsoft.DBforPostgreSQL/flexibleServers"
+  }
 }
 
 # Network Security Group

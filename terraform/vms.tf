@@ -7,8 +7,8 @@ resource "azurerm_linux_virtual_machine_scale_set" "web" {
   name                = "${var.project_name}-${var.environment}-vmss"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
-  sku                 = "Standard_DC1s_v3"
-  instances           = 2
+  sku                 = "Standard_B1ms"
+  instances           = 3
   admin_username      = var.admin_username
   admin_password      = var.admin_password
   disable_password_authentication = false
@@ -16,7 +16,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "web" {
   upgrade_mode    = "Automatic"
   health_probe_id = azurerm_lb_probe.http.id
 
-  zones = ["2", "3"]
+  zones = ["1", "2", "3"]
   zone_balance = true
 
   os_disk {
@@ -86,8 +86,8 @@ resource "azurerm_monitor_autoscale_setting" "web" {
     name = "AutoScale"
     
     capacity {
-      default = 2
-      minimum = 2
+      default = 3
+      minimum = 3
       maximum = var.autoscale_max
     }
     
