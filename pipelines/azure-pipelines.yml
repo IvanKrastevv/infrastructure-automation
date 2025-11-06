@@ -45,10 +45,11 @@ stages:
       displayName: 'Terraform Init + Plan'
       inputs:
         azureSubscription: 'AzureServiceConnection'
-        scriptType: 'ps'  # Use PowerShell for Windows agents
+        scriptType: 'ps'  # PowerShell for Windows
         scriptLocation: 'inlineScript'
         inlineScript: |
-          cd terraform
+          $terraformDir = "$(System.DefaultWorkingDirectory)\terraform"
+          cd $terraformDir
 
           Write-Host "Initializing Terraform backend..."
           terraform init `
@@ -63,9 +64,15 @@ stages:
             -var "db_admin_password=$(db_admin_password)" `
             -out=tfplan
 
+          $tfplanPath = Join-Path $terraformDir "tfplan"
+          if (-Not (Test-Path $tfplanPath)) {
+              Write-Error "Terraform plan file not found at $tfplanPath"
+              exit 1
+          }
+
           Write-Host "Exporting plan to artifact..."
           New-Item -ItemType Directory -Force -Path $(Build.ArtifactStagingDirectory)
-          Copy-Item -Path tfplan -Destination $(Build.ArtifactStagingDirectory)\tfplan
+          Copy-Item -Path $tfplanPath -Destination "$(Build.ArtifactStagingDirectory)\tfplan"
 
     - publish: $(Build.ArtifactStagingDirectory)
       artifact: terraform_plan
@@ -92,7 +99,8 @@ stages:
         scriptType: 'ps'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          cd terraform
+          $terraformDir = "$(System.DefaultWorkingDirectory)\terraform"
+          cd $terraformDir
 
           Write-Host "Reinitializing backend..."
           terraform init `
@@ -101,5 +109,11 @@ stages:
             -backend-config="container_name=$(backend_container)" `
             -backend-config="key=$(backend_key)"
 
+          $tfplanPath = "$(Pipeline.Workspace)\terraform_plan\tfplan"
+          if (-Not (Test-Path $tfplanPath)) {
+              Write-Error "Terraform plan file not found at $tfplanPath"
+              exit 1
+          }
+
           Write-Host "Applying plan..."
-          terraform apply -auto-approve "$(Pipeline.Workspace)\terraform_plan\tfplan"
+          terraform apply -auto-approve $tfplanPath
