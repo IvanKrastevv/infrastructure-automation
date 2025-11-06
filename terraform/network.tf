@@ -26,12 +26,16 @@ resource "azurerm_subnet" "database" {
   address_prefixes     = ["10.0.2.0/24"]
   private_endpoint_network_policies = "Enabled"
 
-  service_delegation {
-    name = "Microsoft.DBforPostgreSQL/flexibleServers"
+  delegation {
+    name = "delegation"
 
-    actions = [
-      "Microsoft.Network/virtualNetworks/subnets/join/action",
-    ]
+    service_delegation {
+      name = "Microsoft.DBforPostgreSQL/flexibleServers"
+
+      actions = [
+        "Microsoft.Network/virtualNetworks/subnets/join/action",
+      ]
+    }
   }
 }
 
