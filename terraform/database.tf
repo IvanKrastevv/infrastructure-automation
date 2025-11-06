@@ -20,13 +20,10 @@ resource "azurerm_postgresql_flexible_server" "main" {
   private_dns_zone_id    = azurerm_private_dns_zone.postgresql.id
   
   create_mode            = "Default"
-  
-  # Backup settings
   backup_retention_days  = 7 # Matches your SQL retention
-#  geo_redundancy_enabled = "Disabled"
-  
-  # Note: PostgreSQL Flexible Server does not require a separate database resource 
-  # for the initial 'postgres' database, but you can create others if needed.
+
+  public_network_access_enabled = false
+
 }
 
 resource "azurerm_postgresql_flexible_server_database" "webapp_db" {
