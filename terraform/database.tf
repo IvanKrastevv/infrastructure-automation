@@ -23,7 +23,7 @@ resource "azurerm_postgresql_flexible_server" "main" {
   
   # Backup settings
   backup_retention_days  = 7 # Matches your SQL retention
-  geo_redundancy_enabled = "Disabled"
+#  geo_redundancy_enabled = "Disabled"
   
   # Note: PostgreSQL Flexible Server does not require a separate database resource 
   # for the initial 'postgres' database, but you can create others if needed.

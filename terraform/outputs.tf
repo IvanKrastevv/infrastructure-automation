@@ -15,7 +15,7 @@ output "resource_group_name" {
 
 output "sql_server_name" {
   description = "SQL Server name"
-  value       = azurerm_mssql_server.main.name
+  value       = azurerm_postgresql_flexible_server.main.name
 }
 
 output "database_name" {
