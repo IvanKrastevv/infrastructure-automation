@@ -7,7 +7,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "web" {
   name                = "${var.project_name}-${var.environment}-vmss"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
-  sku                 = "Standard_B1ms"
+  sku                 = "Standard_D2lds_v6"
   instances           = 2
   admin_username      = var.admin_username
   admin_password      = var.admin_password
