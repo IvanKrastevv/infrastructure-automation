@@ -7,7 +7,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "web" {
   name                = "${var.project_name}-${var.environment}-vmss"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
-  sku                 = "Standard_D2lds_v6"
+  sku                 = "Standard_DC1s_v3"
   instances           = 2
   admin_username      = var.admin_username
   admin_password      = var.admin_password
@@ -16,7 +16,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "web" {
   upgrade_mode    = "Automatic"
   health_probe_id = azurerm_lb_probe.http.id
 
-  zones = ["1", "2", "3"]
+  zones = ["1", "2"]
   zone_balance = true
 
   os_disk {
