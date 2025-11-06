@@ -1,7 +1,7 @@
 variable "project_name" {
   description = "Name of your project"
   type        = string
-  default     = "mywebapp"
+  default     = "ivan-test"
 }
 
 variable "environment" {
@@ -13,7 +13,7 @@ variable "environment" {
 variable "location" {
   description = "Azure region"
   type        = string
-  default     = "East US"
+  default     = "East US 2"
 }
 
 variable "admin_username" {
