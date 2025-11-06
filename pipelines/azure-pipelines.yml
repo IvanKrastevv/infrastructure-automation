@@ -45,31 +45,30 @@ stages:
       displayName: 'Terraform Init + Plan'
       inputs:
         azureSubscription: 'AzureServiceConnection'
-        scriptType: 'bash'
+        scriptType: 'ps'  # Use PowerShell for Windows agents
         scriptLocation: 'inlineScript'
         inlineScript: |
           cd terraform
 
-          echo "Initializing Terraform backend..."
-          terraform init \
-            -backend-config="resource_group_name=$(backend_rg)" \
-            -backend-config="storage_account_name=$(backend_storage)" \
-            -backend-config="container_name=$(backend_container)" \
+          Write-Host "Initializing Terraform backend..."
+          terraform init `
+            -backend-config="resource_group_name=$(backend_rg)" `
+            -backend-config="storage_account_name=$(backend_storage)" `
+            -backend-config="container_name=$(backend_container)" `
             -backend-config="key=$(backend_key)"
 
-          echo "Planning..."
-          
-          terraform plan \
-            -var "admin_password=$(admin_password)" \
-            -var "db_admin_password=$(db_admin_password)" \
+          Write-Host "Planning..."
+          terraform plan `
+            -var "admin_password=$(admin_password)" `
+            -var "db_admin_password=$(db_admin_password)" `
             -out=tfplan
 
-          echo "Exporting plan to artifact..."
-          mkdir -p $(Build.ArtifactStagingDirectory)
-          cp tfplan $(Build.ArtifactStagingDirectory)/tfplan
+          Write-Host "Exporting plan to artifact..."
+          New-Item -ItemType Directory -Force -Path $(Build.ArtifactStagingDirectory)
+          Copy-Item -Path tfplan -Destination $(Build.ArtifactStagingDirectory)\tfplan
+
     - publish: $(Build.ArtifactStagingDirectory)
       artifact: terraform_plan
-
 
 - stage: Terraform_Apply
   displayName: "Terraform Apply (main branch)"
@@ -90,17 +89,17 @@ stages:
       displayName: 'Terraform Apply'
       inputs:
         azureSubscription: 'AzureServiceConnection'
-        scriptType: 'bash'
+        scriptType: 'ps'
         scriptLocation: 'inlineScript'
         inlineScript: |
           cd terraform
 
-          echo "Reinitializing backend..."
-          terraform init \
-            -backend-config="resource_group_name=$(backend_rg)" \
-            -backend-config="storage_account_name=$(backend_storage)" \
-            -backend-config="container_name=$(backend_container)" \
+          Write-Host "Reinitializing backend..."
+          terraform init `
+            -backend-config="resource_group_name=$(backend_rg)" `
+            -backend-config="storage_account_name=$(backend_storage)" `
+            -backend-config="container_name=$(backend_container)" `
             -backend-config="key=$(backend_key)"
 
-          echo "Applying plan..."
-          terraform apply -auto-approve $(Pipeline.Workspace)/terraform_plan/tfplan
+          Write-Host "Applying plan..."
+          terraform apply -auto-approve "$(Pipeline.Workspace)\terraform_plan\tfplan"
