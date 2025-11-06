@@ -23,6 +23,11 @@ resource "azurerm_postgresql_flexible_server" "main" {
   backup_retention_days  = 7 # Matches your SQL retention
 
   public_network_access_enabled = false
+  
+  high_availability {
+      mode                        = "ZoneRedundant"
+      standby_availability_zone   = "2" # Change '2' to the actual zone used by your existing standby server
+    }
 
 }
 
