@@ -9,7 +9,7 @@ pr:
       - '*'
 
 pool:
-  vmImage: 'ubuntu-latest'
+  name: Ivan-hosted-pool
 
 variables:
 - group: terraform-secrets
