@@ -12,13 +12,21 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  terraformVersion: '1.9.8'
-  environment: 'ivan-test'
-  backend_rg: 'tfstate-rg'
-  backend_storage: 'tfstatestorageivan'
-  backend_container: 'tfstate'
-  backend_key: 'infra/terraform.tfstate'
-  deploymentBranch: 'refs/heads/main'
+- group: terraform-secrets
+- name: 'terraformVersion'
+  value: '1.9.8'
+- name: 'environment'
+  value: 'dev'
+- name: 'backend_rg'
+  value: 'tfstate-rg'
+- name: 'backend_storage'
+  value: 'tfstatestorageivan'
+- name: 'backend_container'
+  value: 'tfstate'
+- name: 'backend_key'
+  value: 'infra/terraform.tfstate'
+- name: 'deploymentBranch'
+  value: 'refs/heads/main'
 
 stages:
 
