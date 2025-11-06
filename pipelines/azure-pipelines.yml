@@ -15,7 +15,7 @@ variables:
   terraformVersion: '1.9.8'
   environment: 'ivan-test'
   backend_rg: 'tfstate-rg'
-  backend_storage: 'tfstatestorage-ivan'
+  backend_storage: 'tfstatestorageivan'
   backend_container: 'tfstate'
   backend_key: 'infra/terraform.tfstate'
   deploymentBranch: 'refs/heads/main'
