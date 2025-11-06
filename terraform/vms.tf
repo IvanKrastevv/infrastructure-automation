@@ -16,7 +16,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "web" {
   upgrade_mode    = "Automatic"
   health_probe_id = azurerm_lb_probe.http.id
 
-  zones = ["1", "2"]
+  zones = ["2", "3"]
   zone_balance = true
 
   os_disk {
