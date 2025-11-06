@@ -1,0 +1,62 @@
+# Used for manual cleanup
+trigger: none
+
+pool:
+  name: Ivan-hosted-pool
+
+variables:
+- group: terraform-secrets
+- name: 'terraformVersion'
+  value: '1.9.8'
+- name: 'environment'
+  value: 'dev'
+- name: 'backend_rg'
+  value: 'tfstate-rg'
+- name: 'backend_storage'
+  value: 'tfstatestorageivan'
+- name: 'backend_container'
+  value: 'tfstate'
+- name: 'backend_key'
+  value: 'infra/terraform.tfstate'
+
+stages:
+
+- stage: Terraform_Destroy
+  displayName: "Terraform Destroy"
+  condition: succeeded()
+  jobs:
+  - job: Destroy
+    steps:
+    - task: TerraformInstaller@1
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: '$(terraformVersion)'
+
+    - task: AzureCLI@2
+      displayName: 'Terraform Destroy'
+      inputs:
+        azureSubscription: 'AzureServiceConnection'
+        scriptType: 'ps'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          $terraformDir = "$(System.DefaultWorkingDirectory)\terraform"
+          cd $terraformDir
+
+          # Set SP authentication for AzureRM
+          $env:ARM_CLIENT_ID     = "$(servicePrincipalId)"
+          $env:ARM_CLIENT_SECRET = "$(servicePrincipalKey)"
+          $env:ARM_SUBSCRIPTION_ID = "$(subscriptionId)"
+          $env:ARM_TENANT_ID    = "$(tenantId)"
+
+          Write-Host "Reinitializing backend..."
+          terraform init `
+            -reconfigure `
+            -backend-config="resource_group_name=$(backend_rg)" `
+            -backend-config="storage_account_name=$(backend_storage)" `
+            -backend-config="container_name=$(backend_container)" `
+            -backend-config="key=$(backend_key)"
+
+          Write-Host "Destroying all resources..."
+          terraform destroy -auto-approve `
+            -var "admin_password=$(admin_password)" `
+            -var "db_admin_password=$(db_admin_password)"
