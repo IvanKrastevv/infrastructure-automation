@@ -45,11 +45,17 @@ stages:
       displayName: 'Terraform Init + Plan'
       inputs:
         azureSubscription: 'AzureServiceConnection'
-        scriptType: 'ps'  # PowerShell for Windows
+        scriptType: 'ps'
         scriptLocation: 'inlineScript'
         inlineScript: |
           $terraformDir = "$(System.DefaultWorkingDirectory)\terraform"
           cd $terraformDir
+
+          # Set environment variables for SP authentication (AzureRM provider)
+          $env:ARM_CLIENT_ID = "$(servicePrincipalId)"
+          $env:ARM_CLIENT_SECRET = "$(servicePrincipalKey)"
+          $env:ARM_SUBSCRIPTION_ID = "$(subscriptionId)"
+          $env:ARM_TENANT_ID = "$(tenantId)"
 
           Write-Host "Initializing Terraform backend..."
           terraform init `
@@ -61,6 +67,8 @@ stages:
     
           Write-Host "Planning..."
           terraform plan `
+            -input=false `
+            -no-color `
             -var "admin_password=$(admin_password)" `
             -var "db_admin_password=$(db_admin_password)" `
             -out=tfplan
@@ -103,8 +111,15 @@ stages:
           $terraformDir = "$(System.DefaultWorkingDirectory)\terraform"
           cd $terraformDir
 
+          # Set SP authentication for apply as well
+          $env:ARM_CLIENT_ID = "$(servicePrincipalId)"
+          $env:ARM_CLIENT_SECRET = "$(servicePrincipalKey)"
+          $env:ARM_SUBSCRIPTION_ID = "$(subscriptionId)"
+          $env:ARM_TENANT_ID = "$(tenantId)"
+
           Write-Host "Reinitializing backend..."
           terraform init `
+            -reconfigure `
             -backend-config="resource_group_name=$(backend_rg)" `
             -backend-config="storage_account_name=$(backend_storage)" `
             -backend-config="container_name=$(backend_container)" `
