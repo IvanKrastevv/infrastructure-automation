@@ -7,36 +7,31 @@ resource "azurerm_postgresql_flexible_server" "main" {
   name                   = "${var.project_name}-${var.environment}-pg-flex"
   resource_group_name    = azurerm_resource_group.main.name
   location               = azurerm_resource_group.main.location
-  version                = "16" # Changed to a modern version (e.g., 16)
-  
-  # Admin Credentials
+  version                = "16"
+
+  # Admin credentials
   administrator_login    = var.db_admin_username
   administrator_password = var.db_admin_password
 
-  sku_name               = "B_Standard_B1ms" # Burstable tier with 1 vCore, 2 GiB RAM
-  storage_mb             = 32768           # 32 GiB in MB
-  
+  # Basic performance tier
+  sku_name   = "B_Standard_B1ms" # 1 vCore, 2 GiB RAM
+  storage_mb = 32768             # 32 GiB
+
+  # Networking
   delegated_subnet_id    = azurerm_subnet.database.id
   private_dns_zone_id    = azurerm_private_dns_zone.postgresql.id
-  
-  create_mode            = "Default"
-  backup_retention_days  = 7 # Matches your SQL retention
-
   public_network_access_enabled = false
 
-  high_availability {
-      mode                        = "ZoneRedundant"
-      standby_availability_zone   = "2"
-    }
+  # Backup and maintenance
+  backup_retention_days = 7
+  create_mode           = "Default"
 
   lifecycle {
-      # This prevents Terraform from forcing a failback after an Azure-initiated failover
-      ignore_changes = [
-        zone,
-        high_availability[0].standby_availability_zone
-      ]
-    }
-
+    # Avoids unnecessary diffs if Azure changes internal zone assignment
+    ignore_changes = [
+      zone,
+    ]
+  }
 }
 
 resource "azurerm_postgresql_flexible_server_database" "webapp_db" {
