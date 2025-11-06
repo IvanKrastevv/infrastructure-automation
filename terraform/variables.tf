@@ -1,13 +1,13 @@
 variable "project_name" {
   description = "Name of your project"
   type        = string
-  default     = "ivan-test"
+  default     = "ivan"
 }
 
 variable "environment" {
   description = "Environment (dev, staging, prod)"
   type        = string
-  default     = ""
+  default     = "test-project"
 }
 
 variable "location" {
