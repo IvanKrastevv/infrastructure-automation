@@ -20,5 +20,5 @@ output "sql_server_name" {
 
 output "database_name" {
   description = "Database name"
-  value       = azurerm_mssql_database.main.name
+  value       = azurerm_postgresql_flexible_server_database.webapp_db.name
 }

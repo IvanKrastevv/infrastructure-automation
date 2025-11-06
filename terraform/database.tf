@@ -13,7 +13,7 @@ resource "azurerm_postgresql_flexible_server" "main" {
   administrator_login    = var.db_admin_username
   administrator_password = var.db_admin_password
 
-  sku_name               = "Standard_B1ms" # Burstable tier with 1 vCore, 2 GiB RAM
+  sku_name               = "B_Standard_B1ms" # Burstable tier with 1 vCore, 2 GiB RAM
   storage_mb             = 32768           # 32 GiB in MB
   
   delegated_subnet_id    = azurerm_subnet.database.id
