@@ -11,7 +11,7 @@
 
 ## Overview
 
-The BSS Platform Infrastructure is designed with **high availability** and **automatic failover** as core principles. The architecture leverages Azure's availability zones, load balancing, and health monitoring to ensure continuous service availability.
+The Infrastructure is designed with **high availability** and **automatic failover** as core principles. The architecture leverages Azure's availability zones, load balancing, and health monitoring to ensure continuous service availability.
 
 ### Failover Summary
 
@@ -27,7 +27,7 @@ The BSS Platform Infrastructure is designed with **high availability** and **aut
 **Current Deployment**
 
 - **Load Balancer**: `ivan-test-project-lb` (Zone-redundant, Standard SKU)
-- **Public IP**: `4.254.65.150` (from your deployment) - will be different each fresh rebuild
+- **Public IP**: `4.254.65.150` (from the deployment) - will be different each fresh rebuild
 - **VMSS**: `ivan-test-project-vmss` (3 instances across zones 1, 2, 3)
 - **Backend Pool**: 3 instances
   - Instance 0: Zone 2, IP 10.0.1.4
@@ -35,6 +35,9 @@ The BSS Platform Infrastructure is designed with **high availability** and **aut
   - Instance 2: Zone 1, IP 10.0.1.6
 - **Database**: `ivan-test-project-pg-flex` (PostgreSQL 16)
 - **Health Probe**: HTTP:80/health.html (15-second interval)
+
+<img width="2113" height="1230" alt="image" src="https://github.com/user-attachments/assets/ed88f5d6-1046-483b-bcf0-a032563b184e" />
+
 
 ## Automatic Failover Capabilities
 
@@ -69,6 +72,13 @@ T+33m:  Replacement instance healthy and added to backend pool
 - ✅ **No data loss** - Web tier is stateless
 - ⚠️ **Reduced capacity** - Temporarily 2 instead of 3 instances
 - ⚠️ **Slight performance impact** - Higher load on remaining instances
+
+<img width="1391" height="671" alt="image" src="https://github.com/user-attachments/assets/bb05c31f-b5dd-4bfe-97f7-0500f392686d" />
+
+<img width="1297" height="783" alt="image" src="https://github.com/user-attachments/assets/f8fcc68b-e54a-42dc-9d55-c1d748c91efb" />
+
+<img width="1256" height="1093" alt="image" src="https://github.com/user-attachments/assets/269bef26-22d1-4c5e-8624-2e47a85d2304" />
+
 
 ### 2. Availability Zone Failure
 
@@ -392,3 +402,10 @@ psql -h ivan-test-project-pg-flex-restored.private.postgres.database.azure.com \
 - **Database Restart**: 5 minutes (automatic)
 - **Database Restore**: 60 minutes (manual procedure)
 - **Full Infrastructure Rebuild**: 120 minutes (Terraform redeploy)
+
+### Pipelines 
+<img width="620" height="443" alt="image" src="https://github.com/user-attachments/assets/99ea9486-89ff-4ebb-8daf-3d16a51e7423" />
+
+<img width="1719" height="838" alt="image" src="https://github.com/user-attachments/assets/15a153be-26d2-4529-87a1-1e64e5ad7634" />
+
+
