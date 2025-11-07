@@ -3,22 +3,16 @@ trigger:
     include:
       - main
   paths:
-    exclude:
-      - 'pipeline/*'
-      - 'README.md'
-      - 'FAILOVER.md'
-      - '.gitignore'
+    include:
+      - 'terraform/**'
 
 pr:
   branches:
     include:
       - '*'
   paths:
-    exclude:
-      - 'pipeline/*'
-      - 'README.md'
-      - 'FAILOVER.md'
-      - '.gitignore'
+    include:
+      - 'terraform/**'
 
 
 pool:
