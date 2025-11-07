@@ -78,6 +78,8 @@ This repository contains the complete Infrastructure as Code (IaC) implementatio
 | **Private DNS** | Database name resolution | VNet-linked |
 | **Autoscale** | Dynamic capacity | CPU-based (25-75% threshold) |
 
+<img width="2113" height="1230" alt="image" src="https://github.com/user-attachments/assets/8f0e55e0-6583-4fc1-a0e5-30d1d17ee4ab" />
+
 ## Quick Start
 
 ### Prerequisites
@@ -193,7 +195,7 @@ Based on deployed infrastructure:
 
 See **[FAILOVER.md](docs/FAILOVER.md)** for detailed failover procedures and disaster recovery plans.
 
-## 🛠️ Common Operations
+## Common Operations
 
 ### View Application
 ```bash
@@ -241,7 +243,7 @@ az vmss restart --name ivan-test-project-vmss \
   --instance-id 0
 ```
 
-## 💰 Cost Optimization
+##  Cost Optimization
 
 Current configuration estimated costs (Australia East):
 
