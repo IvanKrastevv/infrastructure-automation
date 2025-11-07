@@ -2,11 +2,24 @@ trigger:
   branches:
     include:
       - main
+  paths:
+    exclude:
+      - 'pipeline/*'
+      - 'README.md'
+      - 'FAILOVER.md'
+      - '.gitignore'
 
 pr:
   branches:
     include:
       - '*'
+  paths:
+    exclude:
+      - 'pipeline/*'
+      - 'README.md'
+      - 'FAILOVER.md'
+      - '.gitignore'
+
 
 pool:
   name: Ivan-hosted-pool
