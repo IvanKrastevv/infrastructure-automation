@@ -393,5 +393,5 @@ psql -h ivan-test-project-pg-flex-restored.private.postgres.database.azure.com \
 <img width="1719" height="838" alt="image" src="https://github.com/user-attachments/assets/15a153be-26d2-4529-87a1-1e64e5ad7634" />
 
 ### Branch protection
-<img width="1859" height="1062" alt="image" src="https://github.com/user-attachments/assets/fcc3a060-f28f-4338-ae78-3398b4b9d383" />
+<img width="1864" height="826" alt="image" src="https://github.com/user-attachments/assets/b41545e8-f1f3-48e0-8dc9-22335655c35c" />
 
