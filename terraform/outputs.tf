@@ -7,7 +7,7 @@ output "application_url" {
   description = "URL to access application"
   value       = "http://${azurerm_public_ip.lb.ip_address}"
 }
-
+ 
 output "resource_group_name" {
   description = "Resource group name"
   value       = azurerm_resource_group.main.name
