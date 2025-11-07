@@ -12,7 +12,6 @@ resource "azurerm_public_ip" "lb" {
 
   zones = ["1", "2", "3"]
 }
-
 # Load Balancer
 resource "azurerm_lb" "main" {
   name                = "${var.project_name}-${var.environment}-lb"
