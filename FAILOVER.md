@@ -8,8 +8,6 @@
 - [Failover Scenarios](#failover-scenarios)
 - [Manual Intervention Procedures](#manual-intervention-procedures)
 - [Disaster Recovery](#disaster-recovery)
-- [Testing Procedures](#testing-procedures)
-- [Monitoring and Alerts](#monitoring-and-alerts)
 
 ## Overview
 
