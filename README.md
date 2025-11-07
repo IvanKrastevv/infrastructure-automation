@@ -144,7 +144,6 @@ infrastructure-automation/
 │   ├── azure-pipelines.yml      # Main deployment pipeline
 │   └── tf-destroy-pipeline.yml  # Cleanup/destroy pipeline
 └── README.md                    # This file
-│ 
 └── FAILOVER.md                   
 ```
 
