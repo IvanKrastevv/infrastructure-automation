@@ -7,7 +7,6 @@
 - [High Availability Architecture](#high-availability-architecture)
 - [Failover Scenarios](#failover-scenarios)
 - [Manual Intervention Procedures](#manual-intervention-procedures)
-- [Disaster Recovery](#disaster-recovery)
 
 ## Overview
 
@@ -387,21 +386,6 @@ psql -h ivan-test-project-pg-flex-restored.private.postgres.database.azure.com \
 
 **Expected Result**: New database with data as of specified restore point
 
-## Disaster Recovery
-
-### Recovery Objectives
-
-**Recovery Point Objective (RPO)** - Maximum acceptable data loss:
-- **Web Tier**: 0 minutes (stateless, no data)
-- **Database**: 5 minutes (continuous backup via transaction logs)
-- **Infrastructure Config**: 0 minutes (Terraform in Git)
-
-**Recovery Time Objective (RTO)** - Maximum acceptable downtime:
-- **Instance Failure**: 0 minutes (automatic failover)
-- **Zone Failure**: 0 minutes (automatic failover)
-- **Database Restart**: 5 minutes (automatic)
-- **Database Restore**: 60 minutes (manual procedure)
-- **Full Infrastructure Rebuild**: 120 minutes (Terraform redeploy)
 
 ### Pipelines 
 <img width="620" height="443" alt="image" src="https://github.com/user-attachments/assets/99ea9486-89ff-4ebb-8daf-3d16a51e7423" />
