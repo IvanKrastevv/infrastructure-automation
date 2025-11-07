@@ -1,5 +1,6 @@
 # Used for manual cleanup
 trigger: none
+pr: none
 
 pool:
   name: Ivan-hosted-pool
