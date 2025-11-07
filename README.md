@@ -128,7 +128,7 @@ This repository contains the complete Infrastructure as Code (IaC) implementatio
 ##  Repository Structure
 
 ```
-bss-platform-infrastructure/
+infrastructure-automation/
 ├── terraform/                    # Terraform configuration files
 │   ├── backend.tf               # Remote state configuration
 │   ├── provider.tf              # Azure provider and resource group
@@ -143,13 +143,9 @@ bss-platform-infrastructure/
 ├── pipelines/                   # Azure DevOps pipelines
 │   ├── azure-pipelines.yml      # Main deployment pipeline
 │   └── tf-destroy-pipeline.yml  # Cleanup/destroy pipeline
-├── docs/                        # Documentation
-│   ├── SETUP.md
-│   ├── ARCHITECTURE.md
-│   ├── FAILOVER.md
-│   ├── PIPELINES.md
-│   └── OPERATIONS.md
 └── README.md                    # This file
+│ 
+└── FAILOVER.md                   
 ```
 
 ##  Security Considerations
