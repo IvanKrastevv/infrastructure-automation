@@ -1,277 +1,264 @@
-⚙️ 2️⃣ Prepare Azure Environment
-Step 1. Log in to Azure
-az login
-az account list -o table
-az account set --subscription "<YOUR_SUBSCRIPTION_ID>"
-
-Step 2. Create Service Principal for Azure DevOps
-
-This allows your Azure DevOps pipeline to authenticate into your subscription securely.
-
-az ad sp create-for-rbac \
-  --name "tf-sp-iac-demo" \
-  --role="Contributor" \
-  --scopes="/subscriptions/<YOUR_SUBSCRIPTION_ID>" \
-  --sdk-auth
-
-
-Output (save it somewhere safe):
-
-{
-  "clientId": "xxxx",
-  "clientSecret": "xxxx",
-  "subscriptionId": "xxxx",
-  "tenantId": "xxxx",
-  ...
-}
-
-
-You’ll paste this into Azure DevOps later.
-
-
-Step 3. Create Terraform State Storage
-
-Terraform needs a remote backend to store state:
-
-az group create -n tfstate-rg -l westeurope
-az storage account create -n <uniquestateaccount> -g tfstate-rg -l westeurope --sku Standard_LRS
-az storage container create -n tfstate --account-name <uniquestateaccount>
-
-
-🧠 5️⃣ Connect Azure DevOps to Azure
-
-In Azure DevOps:
-
-Go to Project Settings → Service connections
-
-Choose Azure Resource Manager → Service principal (manual)
-
-Paste the JSON output from your az ad sp create-for-rbac command
-
-Name it: tf-sp-iac-demo
-
-Click Verify and Save
-
-✅ 6️⃣ Run the Pipeline
-
-Commit all files to GitHub.
-
-In Azure DevOps → Pipelines → New pipeline → Connect GitHub → pick repo.
-
-Choose Existing YAML and select your azure-pipelines.yml.
-
-Click Run.
-
-Terraform will:
-
-Create RG, VNet, Subnet
-
-Deploy Load Balancer + 2 Nginx VMs (auto-healing)
-
-Provision Azure SQL Database
-
-🧩 7️⃣ Verify
-
-After a successful run:
-
-Outputs:
-lb_ip = 20.x.x.x
-db_fqdn = iacdemo-sql.database.windows.net
-
-
-🌐 Visit http://<lb_ip> → should show “Hello from <hostname>”.
-
-🗄️ Connect to DB via Azure Data Studio using:
-
-Server: <db_fqdn>
-
-Username: sqladmin
-
-Password: (from Terraform output)
-
-
-🧯 Failover & Auto-Healing Strategy (README Section)
-💡 Overview
-
-In this infrastructure, failover and auto-healing mechanisms are implemented to ensure high availability (HA) and resilience of the deployed web application stack.
-The design ensures that if one or more components of the system fail (for example, a VM instance crash, network failure, or region issue), traffic and workloads are automatically redirected or recovered with minimal downtime — without manual intervention.
-
-🧱 1️⃣ Web Tier — VM Scale Set + Load Balancer
-
-Components involved:
-
-azurerm_linux_virtual_machine_scale_set (VMSS)
-
-azurerm_lb (Load Balancer)
-
-azurerm_lb_probe (Health Probe)
-
-✅ How Failover Works
-
-The Azure Load Balancer monitors each VM instance in the scale set using the configured HTTP health probe (/healthz endpoint).
-If an instance becomes unhealthy (fails to respond within probe interval):
-
-The LB automatically stops routing traffic to that VM.
-
-The VM Scale Set detects that the instance is in a failed state (e.g., crashed or unresponsive).
-
-Azure automatically recreates or restarts the instance from the original image and configuration (defined in Terraform).
-
-When the new VM passes the health check, the LB adds it back into the rotation.
-
-This ensures continuous service availability — the traffic is failed over to healthy VMs instantly.
-
-🔁 Auto-Healing
-
-VM Scale Sets include an automatic repair policy that monitors the health of individual instances.
-If an instance repeatedly fails health probes, Azure:
-
-Marks it as unhealthy
-
-Automatically deallocates and recreates the VM
-
-Re-applies the same custom data (cloud-init.sh) during provisioning
-
-This provides self-healing at the compute layer.
-
-You can optionally enable explicit auto-healing policies in Terraform:
-
-automatic_instance_repair {
-  enabled      = true
-  grace_period = "PT10M" # Wait 10 minutes before replacing unhealthy instances
-}
-
-🗄️ 2️⃣ Database Tier — Azure SQL Database
-
-The database is hosted as a managed Azure SQL service, which provides:
-
-Built-in automatic failover groups
-
-Active geo-replication
-
-99.99% availability SLA
-
-Automatic patching, backup, and HA
-
-When the primary database node becomes unavailable, Azure automatically promotes a replica to primary.
-This failover is transparent to the application layer, meaning connection strings do not need manual updates.
-
-If you want multi-region HA:
-
-resource "azurerm_mssql_failover_group" "fg" {
-  name                = "${var.prefix}-fg"
-  server_id           = azurerm_mssql_server.sql.id
-  partner_server_id   = azurerm_mssql_server.secondary.id
-  databases           = [azurerm_mssql_database.appdb.id]
-  read_write_endpoint_failover_policy {
-    mode          = "Automatic"
-    grace_minutes = 5
-  }
-}
-
-☁️ 3️⃣ Network Tier — Azure Load Balancer
-
-At the network layer:
-
-The Public Load Balancer provides multi-instance failover.
-
-It continuously probes backend instances on port 80.
-
-If one instance fails, the LB removes it from the backend pool automatically.
-
-You can verify probe logic:
-
-resource "azurerm_lb_probe" "http_probe" {
-  protocol     = "Http"
-  port         = 80
-  request_path = "/healthz"
-  interval_in_seconds = 15
-  number_of_probes    = 2
-}
-
-
-This design guarantees no single point of failure in the web tier.
-
-🔍 4️⃣ Monitoring, Alerts, and Self-Recovery (Optional but Recommended)
-
-To improve observability and resilience:
-
-Azure Monitor can track CPU, memory, and network utilization of VMSS instances.
-
-Action Groups can trigger alerts or auto-healing runbooks in response to failures.
-
-Application Insights or Log Analytics can be integrated to detect anomalies.
-
-Example: Restart a VM automatically on failure using an Azure Automation Runbook.
-
-🧪 5️⃣ Testing Failover (Chaos Engineering)
-
-You can simulate a failure to validate your setup:
-
-# SSH into one VM and stop nginx
-sudo systemctl stop nginx
-
-# Within a minute or two:
-# - The health probe will mark it as unhealthy
-# - LB stops routing traffic to it
-# - VMSS auto-repairs it (restarts the instance)
-
-
-Expected behavior:
-
-The public LB continues to serve responses (from the remaining healthy VM)
-
-The failed instance is automatically replaced
-
-This validates end-to-end failover and self-healing.
-
-🧠 Summary Diagram
-                    ┌──────────────────────────────┐
-                    │        Azure Load Balancer    │
-                    │ (Health probes, traffic mgmt) │
-                    └─────────────┬────────────────┘
-                                  │
-                ┌─────────────────┴─────────────────┐
-                │                                   │
-        ┌──────────────┐                   ┌──────────────┐
-        │ VM Instance 1│                   │ VM Instance 2│
-        │ Nginx + App  │                   │ Nginx + App  │
-        └──────┬───────┘                   └──────┬───────┘
-               │ Auto-Heal                              │
-               └─────────────────────────────────────────┘
-                          │
-                          ▼
-                  ┌────────────────┐
-                  │ Azure SQL DB   │
-                  │ (Managed HA)   │
-                  └────────────────┘
-
-⚙️ 6️⃣ Failover Lifecycle Summary
-Layer	Detection	Recovery Action	Managed By
-VM / App	Health Probe (HTTP 80)	Restart/Replace VM	Azure VMSS
-Load Balancer	Probe timeout	Remove from backend pool	Azure LB
-Database	Node/region failure	Promote replica	Azure SQL
-Infra	Terraform drift	Re-provision on pipeline run	Terraform + CI/CD
-🔄 CI/CD Auto-Recovery
-
-If infrastructure drift or corruption occurs, rerunning the Azure DevOps pipeline automatically:
-
-Re-applies Terraform configuration
-
-Detects missing or misconfigured resources
-
-Recreates them to restore expected state
-
-This provides infrastructure-level self-healing through declarative IaC.
-
-✅ In summary:
-
-The environment is designed for self-recovery using Azure’s native HA features:
-
-VM Scale Set handles web instance failover and healing
-
-Azure SQL provides built-in high availability
-
-Load Balancer ensures traffic continuity
-
-Terraform + CI/CD enforce consistent state after recovery
+#  Platform Infrastructure
+
+> **Enterprise-grade Azure Infrastructure with Automated Failover and High Availability**
+
+[![Terraform](https://img.shields.io/badge/Terraform-1.9.8-623CE4?logo=terraform)](https://www.terraform.io/)
+[![Azure](https://img.shields.io/badge/Azure-Cloud-0078D4?logo=microsoft-azure)](https://azure.microsoft.com/)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-Azure%20DevOps-0078D7?logo=azure-devops)](https://dev.azure.com/)
+
+##  Overview
+
+This repository contains the complete Infrastructure as Code (IaC) implementation for a highly available, auto-scaling web application platform on Microsoft Azure. The infrastructure is designed for reliability, scalability, and automated disaster recovery.
+
+###  Key Features
+
+- ** Automated Failover**: Zone-redundant architecture with automatic instance recovery
+- ** Auto-Scaling**: CPU-based scaling from 3 to 10 instances
+- ** Secure by Default**: Private database, NSG rules, and isolated subnets
+- ** CI/CD Ready**: Automated deployment via Azure DevOps pipelines
+- ** State Management**: Remote state in Azure Storage with locking
+- ** Multi-Zone**: Resources distributed across 3 availability zones
+
+## 🏗️ Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Internet Traffic                          │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                    ┌────────▼────────┐
+                    │  Public IP      │
+                    │  (Zone Redundant)│
+                    └────────┬────────┘
+                             │
+                    ┌────────▼────────┐
+                    │  Load Balancer  │
+                    │  (Standard SKU) │
+                    │  Health Probe:  │
+                    │  /health.html   │
+                    └────────┬────────┘
+                             │
+            ┌────────────────┼────────────────┐
+            │                │                │
+       ┌────▼────┐     ┌────▼────┐     ┌────▼────┐
+       │ VMSS    │     │ VMSS    │     │ VMSS    │
+       │ Zone 1  │     │ Zone 2  │     │ Zone 3  │
+       │ (Nginx) │     │ (Nginx) │     │ (Nginx) │
+       └────┬────┘     └────┬────┘     └────┬────┘
+            │                │                │
+            └────────────────┼────────────────┘
+                             │
+                    ┌────────▼────────┐
+                    │  Virtual Network│
+                    │  10.0.0.0/16    │
+                    ├─────────────────┤
+                    │ Web Subnet      │
+                    │ 10.0.1.0/24     │
+                    ├─────────────────┤
+                    │ Database Subnet │
+                    │ 10.0.2.0/24     │
+                    └────────┬────────┘
+                             │
+                    ┌────────▼────────┐
+                    │ PostgreSQL Flex │
+                    │ (Private)       │
+                    │ Private DNS Zone│
+                    └─────────────────┘
+```
+
+### Infrastructure Components
+
+| Component | Purpose | High Availability |
+|-----------|---------|-------------------|
+| **Load Balancer** | Traffic distribution | Zone-redundant Public IP |
+| **VMSS** | Web application hosting | 3 zones, auto-repair enabled |
+| **PostgreSQL Flexible Server** | Database | Automated backups (7 days) |
+| **Virtual Network** | Network isolation | Multi-subnet architecture |
+| **NSG** | Security rules | Allows HTTP/HTTPS only |
+| **Private DNS** | Database name resolution | VNet-linked |
+| **Autoscale** | Dynamic capacity | CPU-based (25-75% threshold) |
+
+## Quick Start
+
+### Prerequisites
+
+- Azure subscription with appropriate permissions
+- Azure DevOps organization and project
+- Service Principal with Contributor role
+- Self-hosted Azure DevOps agent (for pipelines)
+
+### Initial Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-org/bss-platform-infrastructure.git
+   cd bss-platform-infrastructure
+   ```
+
+2. **Configure backend storage** (one-time setup)
+   ```bash
+   # Create storage account for Terraform state
+   az group create --name tfstate-rg --location australiaeast
+   az storage account create --name tfstatestorageivan \
+     --resource-group tfstate-rg --location australiaeast \
+     --sku Standard_LRS
+   az storage container create --name tfstate \
+     --account-name tfstatestorageivan
+   ```
+
+3. **Set up Azure DevOps variables**
+   
+   Navigate to Azure DevOps → Pipelines → Library → Variable Groups
+   
+   Create group: `terraform-secrets`
+   
+   Add variables:
+   - `servicePrincipalId` (Service Principal App ID)
+   - `servicePrincipalKey` (Service Principal Secret) - **Mark as secret**
+   - `subscriptionId` (Azure Subscription ID)
+   - `tenantId` (Azure AD Tenant ID)
+   - `admin_password` (VM admin password) - **Mark as secret**
+   - `db_admin_password` (Database password) - **Mark as secret**
+
+4. **Run the pipeline**
+   
+   - Push to any branch → Runs Terraform Plan
+   - Push to `main` branch → Runs Terraform Plan + Apply
+
+##  Repository Structure
+
+```
+bss-platform-infrastructure/
+├── terraform/                    # Terraform configuration files
+│   ├── backend.tf               # Remote state configuration
+│   ├── provider.tf              # Azure provider and resource group
+│   ├── variables.tf             # Variable definitions
+│   ├── main.tf                  # Common locals and tags
+│   ├── network.tf               # VNet, subnets, NSG
+│   ├── loadbalancer.tf          # Load balancer and health probes
+│   ├── vms.tf                   # VMSS and autoscaling
+│   ├── database.tf              # PostgreSQL Flexible Server
+│   ├── outputs.tf               # Output values
+│   └── terraform.tfvars.example # Example variables file
+├── pipelines/                   # Azure DevOps pipelines
+│   ├── azure-pipelines.yml      # Main deployment pipeline
+│   └── tf-destroy-pipeline.yml  # Cleanup/destroy pipeline
+├── docs/                        # Documentation
+│   ├── SETUP.md
+│   ├── ARCHITECTURE.md
+│   ├── FAILOVER.md
+│   ├── PIPELINES.md
+│   └── OPERATIONS.md
+└── README.md                    # This file
+```
+
+##  Security Considerations
+
+- ✅ **Database**: Private endpoint, no public access
+- ✅ **Secrets**: Stored in Azure DevOps variable groups (encrypted)
+- ✅ **Network**: NSG rules restrict traffic to HTTP/HTTPS
+- ✅ **Authentication**: Service Principal with minimal required permissions
+- ✅ **State File**: Stored in Azure Storage with encryption at rest
+
+##  Deployment Workflow
+
+1. **Feature branches**: Create PR → Pipeline runs `terraform plan` → Review changes
+2. **Main branch**: Merge → Pipeline runs `terraform plan` + `terraform apply`
+3. **Destroy**: Manually trigger `tf-destroy-pipeline.yml` (requires approval)
+
+## Key Metrics & Monitoring
+
+Based on deployed infrastructure:
+
+| Metric | Configuration |
+|--------|---------------|
+| **VM Instances** | Min: 3, Max: 10, Default: 3 |
+| **Scale Out** | CPU > 75% for 5 minutes → +1 instance |
+| **Scale In** | CPU < 25% for 10 minutes → -1 instance |
+| **Health Check** | Every 15 seconds on `/health.html` |
+| **Auto-Repair** | Enabled with 30-minute grace period |
+| **Backup Retention** | 7 days for PostgreSQL |
+| **Availability Zones** | 3 zones with balanced distribution |
+
+## Failover Capabilities
+
+### Automatic Failover Scenarios
+
+1. **VM Instance Failure**
+   - Health probe fails → Instance removed from load balancer
+   - Auto-repair replaces unhealthy instance within 30 minutes
+   
+2. **Zone Failure**
+   - Traffic automatically routes to healthy zones
+   - VMSS rebalances instances across remaining zones
+
+3. **High Load**
+   - CPU exceeds 75% → New instances added
+   - Cooldown period prevents flapping
+
+See **[FAILOVER.md](docs/FAILOVER.md)** for detailed failover procedures and disaster recovery plans.
+
+## 🛠️ Common Operations
+
+### View Application
+```bash
+# Get the public IP
+cd terraform
+terraform output application_url
+```
+
+### Scale Manually
+```bash
+# Via Azure CLI
+az vmss scale --name ivan-test-project-vmss \
+  --resource-group ivan-test-project-rg \
+  --new-capacity 5
+```
+
+### Check Health Status
+```bash
+# Check load balancer backend pool health
+az network lb show --name ivan-test-project-lb \
+  --resource-group ivan-test-project-rg \
+  --query "backendAddressPools[0].backendIPConfigurations[].id" -o table
+```
+
+### Access Database
+```bash
+# Connect via private endpoint (from within VNet)
+psql -h ivan-test-project-pg-flex.private.postgres.database.azure.com \
+     -U sqladmin -d webapp_db
+```
+
+##  Testing the Infrastructure
+
+### Load Testing
+```bash
+# Generate load to trigger autoscaling
+ab -n 10000 -c 100 http://$(terraform output -raw load_balancer_ip)/
+```
+
+### Failover Testing
+```bash
+# Simulate instance failure
+az vmss restart --name ivan-test-project-vmss \
+  --resource-group ivan-test-project-rg \
+  --instance-id 0
+```
+
+## 💰 Cost Optimization
+
+Current configuration estimated costs (Australia East):
+
+- **Load Balancer**: ~$20/month
+- **VMSS (3x B1ms)**: ~$45/month
+- **PostgreSQL Flexible (B1ms)**: ~$15/month
+- **Storage**: ~$2/month
+- **Networking**: ~$5/month
+
+**Total**: ~$87/month (varies with autoscaling)
+
+### Cost Reduction Tips
+- Reduce VMSS instance count during off-hours
+- Use Azure Reservations for predictable workloads
+- Enable Azure Hybrid Benefit if applicable
