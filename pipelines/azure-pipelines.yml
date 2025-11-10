@@ -14,7 +14,6 @@ pr:
     include:
       - 'terraform/**'
 
-
 pool:
   name: Ivan-hosted-pool
 
@@ -137,6 +136,5 @@ stages:
               Write-Error "Terraform plan file not found at $tfplanPath"
               exit 1
           }
-
           Write-Host "Applying plan..."
           terraform apply -auto-approve $tfplanPath
