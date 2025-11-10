@@ -93,8 +93,8 @@ This repository contains the complete Infrastructure as Code (IaC) implementatio
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-org/bss-platform-infrastructure.git
-   cd bss-platform-infrastructure
+   git clone https://github.com/IvanKrastevv/infrastructure-automation.git
+   cd infrastructure-automation
    ```
 
 2. **Configure backend storage** (one-time setup)
